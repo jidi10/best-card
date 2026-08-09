@@ -1,6 +1,6 @@
 {
-  "name": "Which Card?",
-  "short_name": "Which Card?",
+  "name": "Best Card",
+  "short_name": "Best Card",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

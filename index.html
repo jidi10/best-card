@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Which card?">
+<meta name="apple-mobile-web-app-title" content="Best Card">
 <title>Which card do I swipe?</title>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -50,7 +50,8 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 .card .glow { position:absolute; inset:0; background:radial-gradient(120% 100% at 100% 0%, rgba(232,176,75,.16), transparent 60%); }
 .cchip { width:30px; height:22px; border-radius:5px; background:linear-gradient(135deg,#E8B04B,#b9832d); }
 .cimg { height:40px; width:auto; border-radius:6px; display:block; box-shadow:0 2px 9px rgba(0,0,0,.45); }
-.cfallback { width:40px; height:40px; border-radius:8px; background:#CC0000; color:#fff; display:flex; align-items:center; justify-content:center; }
+.cfallback { width:63px; height:40px; border-radius:6px; background:#CC0000; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 9px rgba(0,0,0,.45); }
+.cfallback svg { width:26px; height:26px; }
 .runner { display:flex; align-items:center; gap:12px; padding:11px 13px; border-radius:10px;
   background:#16161e; border:1px solid #23232f; }
 .stripe { width:4px; align-self:stretch; border-radius:3px; min-height:26px; }
@@ -235,7 +236,7 @@ function renderChips(){
       <span class="ic">${icon(c.icon)}</span>
       <span><span class="lab">${c.label}</span><br><span class="sub">${c.sub}</span></span>
     </button>`).join('');
-  el.querySelectorAll('.cat').forEach(b=>b.onclick=()=>{ sel=b.dataset.k; renderChips(); renderResult(); });
+  el.querySelectorAll('.cat').forEach(b=>b.onclick=()=>{ sel=b.dataset.k; renderChips(); renderResult(); scrollToResult(); });
 }
 
 function renderResult(){
@@ -275,6 +276,12 @@ function renderResult(){
     </div>`;
 }
 
+function scrollToResult(){
+  const el = document.getElementById('result');
+  if(!el) return;
+  const smooth = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  requestAnimationFrame(()=>{ el.scrollIntoView({ behavior: smooth?'smooth':'auto', block:'nearest' }); });
+}
 function renderAll(){ renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 renderAll();
