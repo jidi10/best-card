@@ -285,6 +285,24 @@ function scrollToResult(){
 function renderAll(){ renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 renderAll();
+
+// Register the service worker. On each launch it checks for a new version;
+// when one is found it activates and reloads once so the shortcut self-updates.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
