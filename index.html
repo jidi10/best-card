@@ -61,6 +61,17 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 .warn { background:#2a1810; border:1px solid #7a4a1e; border-radius:11px; padding:12px 14px; margin:14px 0 2px;
   font-size:12.5px; line-height:1.5; color:#f0c891; display:flex; gap:9px; }
 .warn b { color:#E8B04B; }
+.trk { background:#14141f; border:1px solid #26263a; border-radius:12px; padding:13px 15px; }
+.trk.in-card { position:relative; background:transparent; border:none; border-top:1px solid #3a3322; border-radius:0; padding:14px 0 0; margin-top:14px; }
+.trk-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.trk-lab { font-size:11px; letter-spacing:2px; color:#9c9ab0; font-weight:600; }
+.trk-amt { font-size:15px; font-weight:700; }
+.trk-bar { height:9px; border-radius:6px; background:#23232f; overflow:hidden; margin:9px 0 7px; }
+.trk-fill { height:100%; border-radius:6px; background:#E8B04B; transition:width .25s; }
+.trk-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.trk .in { width:110px; }
+.trk-link { background:none; border:none; color:#8b8aa0; font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; padding:0; }
+@media (prefers-reduced-motion:reduce){ .trk-fill{ transition:none; } }
 @media (max-width:520px){ .wrap{ padding:16px 14px 30px; } .chip{ grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); } }
 @media (prefers-reduced-motion:reduce){ .cat{ transition:none; } }
 </style>
@@ -174,9 +185,35 @@ function currentQuarter(){
   return QUARTERS.find(q => t >= q.start && t <= q.end) || null;
 }
 // Overlay the active quarter's 5% onto a category's Freedom Flex rate.
+// ---- Freedom Flex bonus-spend tracker ----------------------------------------
+// Tracks spend toward the quarterly bonus cap, per quarter (resets automatically
+// when a new quarter starts). Manual entry for now, saved on this device only.
+// FUTURE FEED: set SPEND_FEED_URL to a JSON file shaped like
+//   { "2026Q4": 432.10, "updated": "2026-10-14" }
+// and the tracker will read from it instead of manual entry.
+const FF_CAP_DEFAULT = 1500;
+const SPEND_FEED_URL = null;   // e.g. './ff-spend.json'
+let SPEND = {}, feedSpend = null, feedUpdated = null, trkEditing = false;
+try { SPEND = JSON.parse(localStorage.getItem('bestcard:ffspend') || '{}') || {}; } catch(e){ SPEND = {}; }
+function saveSpend(){ try { localStorage.setItem('bestcard:ffspend', JSON.stringify(SPEND)); } catch(e){} }
+function ffCap(q){ return (q && q.cap) || FF_CAP_DEFAULT; }
+function ffSpent(q){
+  if(!q) return 0;
+  if(feedSpend && feedSpend[q.id]!==undefined) return +feedSpend[q.id] || 0;
+  return +SPEND[q.id] || 0;
+}
+function ffCapHit(q){ return q ? ffSpent(q) >= ffCap(q) : false; }
+function loadSpendFeed(){
+  if(!SPEND_FEED_URL) return;
+  fetch(SPEND_FEED_URL, { cache:'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if(!j) return; feedSpend = j; feedUpdated = j.updated || null; renderAll();
+  }).catch(()=>{});
+}
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+
 function withQuarter(cat){
   const q = currentQuarter();
-  const bonus = q ? (q.ffBonus[cat.key] || 0) : 0;
+  const bonus = (q && !ffCapHit(q)) ? (q.ffBonus[cat.key] || 0) : 0;
   if(!bonus) return cat;
   return Object.assign({}, cat, { rates: Object.assign({}, cat.rates, { ff: Math.max(cat.rates.ff||1, bonus) }) });
 }
@@ -294,11 +331,20 @@ function renderResult(){
   const q = currentQuarter();
   let notes = cat.notes.slice();
   if(q && q.ffBonus[cat.key]){
-    notes = ['Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — activate it. Capped at $1,500 combined/qtr; expires '+fmtDate(q.end)+'.'].concat(notes);
+    const cap = ffCap(q), left = Math.max(0, cap - ffSpent(q));
+    notes = [ ffCapHit(q)
+      ? 'Freedom Flex '+money(cap)+' bonus cap reached this quarter — shown at its base rate. Bonus resets '+fmtDate(q.end)+'.'
+      : 'Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — activate it. '+money(left)+' of the '+money(cap)+' combined cap left; expires '+fmtDate(q.end)+'.'
+    ].concat(notes);
   } else if(rawCat.rotating){
     notes = ['Not a Freedom Flex bonus this quarter — shown at its non-bonus rate. Re-check chase.com/freedomflex.'].concat(notes);
   }
   const rows = ranking(cat), w = rows[0], ties = rows.filter(r=>r.tie);
+  // Freedom Flex bonus tracker: inside the card when Freedom Flex wins a bonus
+  // category; below it when the cap is hit (so the total can still be corrected).
+  const isBonusCat = !!(q && q.ffBonus[rawCat.key]);
+  const trkIn = isBonusCat && w.key==='ff';
+  const trkBelow = isBonusCat && !trkIn && ffCapHit(q);
   const runners = rows.slice(1).filter(r=>!r.tie).map(r=>`
     <div class="runner">
       <div class="stripe" style="background:${CARDS[r.key].band}"></div>
@@ -325,10 +371,13 @@ function renderResult(){
           </div>
         </div>
         ${ties.length>1?`<div class="note" style="position:relative;margin-top:12px;color:#c9b892">Also ties: ${ties.slice(1).map(t=>CARDS[t.key].short).join(', ')} — pick by protections/points.</div>`:''}
+        ${trkIn?'<div id="tracker" data-in="1"></div>':''}
       </div>
+      ${trkBelow?'<div id="tracker"></div>':''}
       <div style="display:flex;flex-direction:column;gap:7px">${runners}</div>
       <div class="notebox">${notes.map(n=>`<div class="note" style="display:flex;gap:8px"><span style="color:#E8B04B">›</span><span>${n}</span></div>`).join('')}</div>
     </div>`;
+  renderTracker();
 }
 
 function scrollToResult(){
@@ -352,9 +401,46 @@ function renderChrome(){
     foot.innerHTML = 'On mobile: Share → Add to Home Screen to keep this one tap away.';
   }
 }
+function renderTracker(){
+  const el = document.getElementById('tracker');
+  const q = currentQuarter();
+  if(!el || !q) return;
+  const cap = ffCap(q), spent = ffSpent(q), pct = Math.min(100, spent / cap * 100);
+  const hit = spent >= cap, fromFeed = !!(feedSpend && feedSpend[q.id]!==undefined);
+  const color = hit ? '#6f6d82' : pct >= 85 ? '#E8883B' : '#E8B04B';
+  el.innerHTML = `
+    <div class="trk${el.dataset.in?' in-card':''}">
+      <div class="trk-top">
+        <span class="trk-lab">${el.dataset.in?"QUARTERLY BONUS":"FREEDOM FLEX BONUS"} · ${q.id.slice(4)} ${q.id.slice(0,4)}</span>
+        <span class="mono trk-amt">${money(spent)} <span style="color:#6f6d82;font-weight:400">/ ${money(cap)}</span></span>
+      </div>
+      <div class="trk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(spent)}">
+        <div class="trk-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div class="note">${hit ? 'Cap reached — bonus categories now shown at base rate.' : money(cap - spent)+' left at the bonus rate · ends '+fmtDate(q.end)}${fromFeed ? ' · from feed'+(feedUpdated?' ('+feedUpdated+')':'') : ''}</div>
+      ${fromFeed ? '' : `
+      <div class="trk-row">
+        <input class="in" id="trkAmt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="${trkEditing?'New total':'Amount'}">
+        <button class="set" id="trkGo">${trkEditing?'Set total':'Add'}</button>
+        <button class="trk-link" id="trkMode">${trkEditing?'Cancel':'Edit total'}</button>
+      </div>`}
+    </div>`;
+  if(fromFeed) return;
+  const inp = document.getElementById('trkAmt');
+  const go = () => {
+    const v = parseFloat(inp.value);
+    if(isNaN(v) || v < 0) return;
+    SPEND[q.id] = Math.round((trkEditing ? v : spent + v) * 100) / 100;
+    trkEditing = false; saveSpend(); renderResult();
+  };
+  document.getElementById('trkGo').onclick = go;
+  inp.onkeydown = e => { if(e.key==='Enter') go(); };
+  document.getElementById('trkMode').onclick = () => { trkEditing = !trkEditing; renderTracker(); };
+}
 function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 renderAll();
+loadSpendFeed();
 
 // Register the service worker. On each launch it checks for a new version;
 // when one is found it activates and reloads once so the shortcut self-updates.
