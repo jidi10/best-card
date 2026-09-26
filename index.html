@@ -69,6 +69,12 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 .trk-bar { height:9px; border-radius:6px; background:#23232f; overflow:hidden; margin:9px 0 7px; }
 .trk-fill { height:100%; border-radius:6px; background:#E8B04B; transition:width .25s; }
 .trk-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.trk-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.trk-card .trk-bar { margin:6px 0 4px; }
+.trk-who { font-size:13px; font-weight:600; color:#EDEBE4; margin-bottom:2px; }
+.trk-card .trk-amt { font-size:13px; }
+.trk .seg button { padding:7px 11px; }
+@media (max-width:380px){ .trk-grid{ grid-template-columns:1fr; } }
 .trk .in { width:110px; }
 .trk-link { background:none; border:none; color:#8b8aa0; font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; padding:0; }
 @media (prefers-reduced-motion:reduce){ .trk-fill{ transition:none; } }
@@ -186,28 +192,34 @@ function currentQuarter(){
 }
 // Overlay the active quarter's 5% onto a category's Freedom Flex rate.
 // ---- Freedom Flex bonus-spend tracker ----------------------------------------
-// Tracks spend toward the quarterly bonus cap, per quarter (resets automatically
-// when a new quarter starts). Manual entry for now, saved on this device only.
-// FUTURE FEED: set SPEND_FEED_URL to a JSON file shaped like
-//   { "2026Q4": 432.10, "updated": "2026-10-14" }
-// and the tracker will read from it instead of manual entry.
+// Two separate Freedom Flex accounts, each with its own quarterly bonus cap.
+// Totals are saved per quarter on this device only (reset automatically each
+// quarter) and are never sent anywhere.
+// Updating from the transaction export: the local script builds a link like
+//   index.html?ffq=2026Q4&justin=812.40&corinne=230.10&asof=2026-10-14
+// Opening it saves those totals here, then strips them from the address bar.
 const FF_CAP_DEFAULT = 1500;
-const SPEND_FEED_URL = null;   // e.g. './ff-spend.json'
-let SPEND = {}, feedSpend = null, feedUpdated = null, trkEditing = false;
+const FF_CARDS = [ { id:'justin', label:'Justin' }, { id:'corinne', label:'Corinne' } ];
+let SPEND = {}, trkEditing = false, trkWho = 'justin', importMsg = null;
 try { SPEND = JSON.parse(localStorage.getItem('bestcard:ffspend') || '{}') || {}; } catch(e){ SPEND = {}; }
+// Migrate the earlier single-card format ({ "2026Q4": 123 }) to Justin's card.
+Object.keys(SPEND).forEach(k => { if(typeof SPEND[k] === 'number') SPEND[k] = { justin: SPEND[k], corinne: 0 }; });
 function saveSpend(){ try { localStorage.setItem('bestcard:ffspend', JSON.stringify(SPEND)); } catch(e){} }
 function ffCap(q){ return (q && q.cap) || FF_CAP_DEFAULT; }
-function ffSpent(q){
-  if(!q) return 0;
-  if(feedSpend && feedSpend[q.id]!==undefined) return +feedSpend[q.id] || 0;
-  return +SPEND[q.id] || 0;
-}
-function ffCapHit(q){ return q ? ffSpent(q) >= ffCap(q) : false; }
-function loadSpendFeed(){
-  if(!SPEND_FEED_URL) return;
-  fetch(SPEND_FEED_URL, { cache:'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
-    if(!j) return; feedSpend = j; feedUpdated = j.updated || null; renderAll();
-  }).catch(()=>{});
+function ffRec(q){ return (q && SPEND[q.id]) || {}; }
+function ffSpent(q, who){ return +ffRec(q)[who] || 0; }
+function ffLeft(q, who){ return Math.max(0, ffCap(q) - ffSpent(q, who)); }
+function ffCapHit(q){ return q ? FF_CARDS.every(c => ffLeft(q, c.id) <= 0) : false; }   // true only when BOTH cards are capped
+function ffSet(qid, who, v){ SPEND[qid] = Object.assign({ justin:0, corinne:0 }, SPEND[qid] || {}); SPEND[qid][who] = Math.round(v*100)/100; }
+function importFromUrl(){
+  let u; try { u = new URL(window.location.href); } catch(e){ return; }
+  const qid = u.searchParams.get('ffq');
+  if(!qid) return;
+  let n = 0;
+  FF_CARDS.forEach(c => { const v = parseFloat(u.searchParams.get(c.id)); if(!isNaN(v) && v >= 0){ ffSet(qid, c.id, v); n++; } });
+  const asof = u.searchParams.get('asof');
+  if(n){ SPEND[qid].asof = asof || null; saveSpend(); importMsg = 'Updated from transaction export'+(asof ? ' (through '+fmtDate(asof)+')' : '')+'.'; }
+  try { history.replaceState(null, '', u.pathname); } catch(e){}
 }
 const money = n => '$' + Math.round(n).toLocaleString('en-US');
 
@@ -331,11 +343,12 @@ function renderResult(){
   const q = currentQuarter();
   let notes = cat.notes.slice();
   if(q && q.ffBonus[cat.key]){
-    const cap = ffCap(q), left = Math.max(0, cap - ffSpent(q));
-    notes = [ ffCapHit(q)
-      ? 'Freedom Flex '+money(cap)+' bonus cap reached this quarter — shown at its base rate. Bonus resets '+fmtDate(q.end)+'.'
-      : 'Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — activate it. '+money(left)+' of the '+money(cap)+' combined cap left; expires '+fmtDate(q.end)+'.'
-    ].concat(notes);
+    const open = FF_CARDS.filter(c => ffLeft(q, c.id) > 0);
+    let head;
+    if(!open.length) head = 'Both Freedom Flex cards have hit their '+money(ffCap(q))+' bonus caps — shown at base rate. Bonus ends '+fmtDate(q.end)+'.';
+    else if(open.length === 1) head = 'Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — use '+open[0].label+'’s card ('+money(ffLeft(q, open[0].id))+' left); the other card is capped. Expires '+fmtDate(q.end)+'.';
+    else head = 'Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — activate on both cards. Each has its own '+money(ffCap(q))+' cap; expires '+fmtDate(q.end)+'.';
+    notes = [head].concat(notes);
   } else if(rawCat.rotating){
     notes = ['Not a Freedom Flex bonus this quarter — shown at its non-bonus rate. Re-check chase.com/freedomflex.'].concat(notes);
   }
@@ -405,42 +418,53 @@ function renderTracker(){
   const el = document.getElementById('tracker');
   const q = currentQuarter();
   if(!el || !q) return;
-  const cap = ffCap(q), spent = ffSpent(q), pct = Math.min(100, spent / cap * 100);
-  const hit = spent >= cap, fromFeed = !!(feedSpend && feedSpend[q.id]!==undefined);
-  const color = hit ? '#6f6d82' : pct >= 85 ? '#E8883B' : '#E8B04B';
+  const cap = ffCap(q), rec = ffRec(q);
+  const bars = FF_CARDS.map(c => {
+    const spent = ffSpent(q, c.id), pct = Math.min(100, spent / cap * 100), hit = spent >= cap;
+    const color = hit ? '#6f6d82' : pct >= 85 ? '#E8883B' : '#E8B04B';
+    return `
+      <div class="trk-card">
+        <div class="trk-who">${c.label}</div>
+        <div class="mono trk-amt">${money(spent)} <span style="color:#6f6d82;font-weight:400">/ ${money(cap)}</span></div>
+        <div class="trk-bar" role="progressbar" aria-label="${c.label} Freedom Flex bonus spend" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(spent)}">
+          <div class="trk-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="note" style="font-size:11.5px">${hit ? (ffCapHit(q) ? 'Capped' : 'Capped — use the other card') : money(cap - spent)+' left'}</div>
+      </div>`;
+  }).join('');
   el.innerHTML = `
     <div class="trk${el.dataset.in?' in-card':''}">
-      <div class="trk-top">
-        <span class="trk-lab">${el.dataset.in?"QUARTERLY BONUS":"FREEDOM FLEX BONUS"} · ${q.id.slice(4)} ${q.id.slice(0,4)}</span>
-        <span class="mono trk-amt">${money(spent)} <span style="color:#6f6d82;font-weight:400">/ ${money(cap)}</span></span>
+      <div class="trk-top" style="margin-bottom:10px">
+        <span class="trk-lab">${el.dataset.in?'QUARTERLY BONUS':'FREEDOM FLEX BONUS'} · ${q.id.slice(4)} ${q.id.slice(0,4)}</span>
+        <span class="note" style="font-size:11px">ends ${fmtDate(q.end)}</span>
       </div>
-      <div class="trk-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${Math.round(spent)}">
-        <div class="trk-fill" style="width:${pct}%;background:${color}"></div>
-      </div>
-      <div class="note">${hit ? 'Cap reached — bonus categories now shown at base rate.' : money(cap - spent)+' left at the bonus rate · ends '+fmtDate(q.end)}${fromFeed ? ' · from feed'+(feedUpdated?' ('+feedUpdated+')':'') : ''}</div>
-      ${fromFeed ? '' : `
+      ${importMsg ? `<div class="note" style="color:#c9b892;margin-bottom:8px">${importMsg}</div>` : (rec.asof ? `<div class="note" style="font-size:11px;margin-bottom:8px">Last export: through ${fmtDate(rec.asof)}</div>` : '')}
+      <div class="trk-grid">${bars}</div>
       <div class="trk-row">
+        <div class="seg" id="trkWho">
+          ${FF_CARDS.map(c => `<button data-v="${c.id}" data-on="${trkWho===c.id?1:0}">${c.label}</button>`).join('')}
+        </div>
         <input class="in" id="trkAmt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="${trkEditing?'New total':'Amount'}">
         <button class="set" id="trkGo">${trkEditing?'Set total':'Add'}</button>
         <button class="trk-link" id="trkMode">${trkEditing?'Cancel':'Edit total'}</button>
-      </div>`}
+      </div>
     </div>`;
-  if(fromFeed) return;
   const inp = document.getElementById('trkAmt');
   const go = () => {
     const v = parseFloat(inp.value);
     if(isNaN(v) || v < 0) return;
-    SPEND[q.id] = Math.round((trkEditing ? v : spent + v) * 100) / 100;
-    trkEditing = false; saveSpend(); renderResult();
+    ffSet(q.id, trkWho, trkEditing ? v : ffSpent(q, trkWho) + v);
+    trkEditing = false; importMsg = null; saveSpend(); renderResult();
   };
   document.getElementById('trkGo').onclick = go;
   inp.onkeydown = e => { if(e.key==='Enter') go(); };
   document.getElementById('trkMode').onclick = () => { trkEditing = !trkEditing; renderTracker(); };
+  el.querySelectorAll('#trkWho button').forEach(b => b.onclick = () => { trkWho = b.dataset.v; renderTracker(); });
 }
 function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
+importFromUrl();
 renderAll();
-loadSpendFeed();
 
 // Register the service worker. On each launch it checks for a new version;
 // when one is found it activates and reloads once so the shortcut self-updates.
