@@ -195,9 +195,12 @@ function currentQuarter(){
 // Two separate Freedom Flex accounts, each with its own quarterly bonus cap.
 // Totals are saved per quarter on this device only (reset automatically each
 // quarter) and are never sent anywhere.
-// Updating from the transaction export: the local script builds a link like
-//   index.html?ffq=2026Q4&justin=812.40&corinne=230.10&asof=2026-10-14
-// Opening it saves those totals here, then strips them from the address bar.
+// Updating from the transaction export: the local script (Transactions/
+// ff_bonus_spend.py) writes ff-spend.json next to this file, TOTALS ONLY:
+//   { "quarter":"2026Q4", "asof":"2026-10-14", "justin":812.40, "corinne":230.10 }
+// On launch the app fetches it; each new export is applied once, and manual
+// Add / Edit total still work on top until the next export.
+// (A link like index.html?ffq=2026Q4&justin=..&corinne=..&asof=.. also works.)
 const FF_CAP_DEFAULT = 1500;
 const FF_CARDS = [ { id:'justin', label:'Justin' }, { id:'corinne', label:'Corinne' } ];
 let SPEND = {}, trkEditing = false, trkWho = 'justin', importMsg = null;
@@ -220,6 +223,19 @@ function importFromUrl(){
   const asof = u.searchParams.get('asof');
   if(n){ SPEND[qid].asof = asof || null; saveSpend(); importMsg = 'Updated from transaction export'+(asof ? ' (through '+fmtDate(asof)+')' : '')+'.'; }
   try { history.replaceState(null, '', u.pathname); } catch(e){}
+}
+function loadSpendFile(){
+  fetch('ff-spend.json', { cache:'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if(!j || !j.quarter) return;
+    const stamp = [j.quarter, j.asof, j.justin, j.corinne].join('|');
+    let last = null; try { last = localStorage.getItem('bestcard:ffApplied'); } catch(e){}
+    if(stamp === last) return;               // this export was already applied
+    FF_CARDS.forEach(c => { const v = parseFloat(j[c.id]); if(!isNaN(v) && v >= 0) ffSet(j.quarter, c.id, v); });
+    SPEND[j.quarter].asof = j.asof || null; saveSpend();
+    try { localStorage.setItem('bestcard:ffApplied', stamp); } catch(e){}
+    importMsg = 'Updated from transaction export'+(j.asof ? ' (through '+fmtDate(j.asof)+')' : '')+'.';
+    renderResult();
+  }).catch(()=>{});
 }
 const money = n => '$' + Math.round(n).toLocaleString('en-US');
 
@@ -465,6 +481,7 @@ function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderRes
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 importFromUrl();
 renderAll();
+loadSpendFile();
 
 // Register the service worker. On each launch it checks for a new version;
 // when one is found it activates and reloads once so the shortcut self-updates.

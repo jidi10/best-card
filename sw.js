@@ -1,6 +1,6 @@
 // Best Card service worker
 // Bump VERSION on every publish to force the home-screen shortcut to update.
-const VERSION = '2026-09-26e';
+const VERSION = '2026-09-26f';
 const CACHE = 'bestcard-' + VERSION;
 
 // Files safe to pre-cache for offline use.
@@ -36,6 +36,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  // Spend totals: never cache, always go to the network.
+  if (new URL(req.url).pathname.endsWith('/ff-spend.json')) return;
 
   const isHTML = req.mode === 'navigate' ||
     (req.headers.get('accept') || '').includes('text/html');
