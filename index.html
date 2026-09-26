@@ -58,6 +58,9 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 .notebox { background:#14141f; border:1px solid #23232f; border-radius:11px; padding:13px 15px; }
 .empty { text-align:center; color:#6f6d82; padding:26px 0; font-size:14px; }
 .foot { margin-top:22px; font-size:11px; color:#55536a; line-height:1.5; }
+.warn { background:#2a1810; border:1px solid #7a4a1e; border-radius:11px; padding:12px 14px; margin:14px 0 2px;
+  font-size:12.5px; line-height:1.5; color:#f0c891; display:flex; gap:9px; }
+.warn b { color:#E8B04B; }
 @media (max-width:520px){ .wrap{ padding:16px 14px 30px; } .chip{ grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); } }
 @media (prefers-reduced-motion:reduce){ .cat{ transition:none; } }
 </style>
@@ -66,18 +69,16 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 <div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
     <div>
-      <div class="eyebrow">3rd QUARTER 2026</div>
+      <div class="eyebrow" id="eyebrow">3rd QUARTER 2026</div>
       <h1>Which card do I swipe?</h1>
     </div>
     <button class="set" id="setBtn">Settings</button>
   </div>
   <div id="settings"></div>
+  <div id="warn"></div>
   <div class="chip" id="chips"></div>
   <div id="result"><div class="empty">Tap a category to see your best card.</div></div>
-  <div class="foot">
-    Freedom Flex bonus categories are locked to Q3 2026 (gas &amp; EV, transit, live entertainment) and expire Sep 30, 2026 — re-check the quarterly categories before relying on them next quarter.
-    On mobile: Share → Add to Home Screen to keep this one tap away.
-  </div>
+  <div class="foot" id="foot"></div>
 </div>
 
 <script>
@@ -88,7 +89,10 @@ const CARDS = {
   ccr:   { name:'BofA Customized Cash Rewards', short:'Customized Cash',    issuer:'BofA',   band:'#7C1330', type:'ccr'   },
   amex:  { name:'Amex Blue Cash Everyday',      short:'Blue Cash Everyday', issuer:'AMEX',   band:'#3F6698', type:'flat'  },
   target:{ name:'Target Circle Card',           short:'Target Circle',      issuer:'TARGET', band:'#CC0000', type:'target'},
+  paypal:{ name:'PayPal Debit Mastercard',      short:'PayPal Debit',       issuer:'PAYPAL', band:'#003087', type:'paypal', mark:'PP'},
 };
+// Cards that only appear in categories where they're explicitly rated.
+const LISTED_ONLY = ['target','paypal'];
 
 const ICON_IMG = {
   ff:'data:image/avif;base64,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',
@@ -100,23 +104,26 @@ const ICON_IMG = {
 
 const CATS = [
   { key:'groceries', label:'Groceries', sub:'In-store supermarket', icon:'cart',
-    rates:{ ff:1, csp:1, ccr:1, amex:3 },
-    notes:['Amex 3% is capped at $6k/yr.','CCR held back here on purpose — its $2,500/qtr cap is reserved for online shopping (5.25%).'] },
+    rates:{ ff:1, csp:1, ccr:1, amex:3, paypal:5 }, prefer:{ ff:1 },
+    notes:['PayPal Debit 5% only if Groceries is your selected PayPal category this month; $1,000/mo spend cap, shared with Costco.','When Freedom Flex has a grocery bonus, use it here first (its cap expires with the quarter) and save PayPal’s cap for Costco.','Amex 3% is capped at $6k/yr.','CCR held back here on purpose — its $2,500/qtr cap is reserved for online shopping (5.25%).'] },
+  { key:'costco', label:'Costco', sub:'In-warehouse (Visa or debit only)', icon:'warehouse',
+    rates:{ paypal:5, ccr:2, csp:1, ucr:1 }, accepts:['paypal','ccr','csp','ucr'],
+    notes:['Costco warehouses take Visa credit and debit cards only — Freedom Flex, Target (Mastercard credit) and Amex won’t work.','Chase and Amex grocery bonuses exclude wholesale clubs anyway.','PayPal Debit 5% counts Costco as groceries; $1,000/mo cap, shared with other grocery spend.','Over the PayPal cap, CCR’s 2% wholesale-club rate is next best, but it eats into the $2,500/qtr cap you save for online shopping.'] },
   { key:'online', label:'Online shopping', sub:'General online retail', icon:'monitor',
     rates:{ ff:1, csp:1, ccr:3, amex:3 },
     notes:['This is your CCR 3% choice category.','CCR 3%+2% combined cap is $2,500/qtr.'] },
-  { key:'gas', label:'Gas', sub:'Gas & EV charging', icon:'pump',
-    rates:{ ff:5, csp:1, ccr:1, amex:3 },
-    notes:['Freedom Flex Q3 2026 bonus — activate it.','5% capped at $1,500 combined/qtr; expires Sep 30, 2026.'] },
-  { key:'transit', label:'Public transit', sub:'Trains, buses, parking, tolls', icon:'bus',
-    rates:{ ff:5, csp:2, ccr:1, amex:1 },
-    notes:['Freedom Flex Q3 2026 bonus — expires Sep 30, 2026.','Sapphire also codes transit as 2x travel.'] },
-  { key:'entertainment', label:'Live entertainment', sub:'Concerts, sports, parks', icon:'ticket',
-    rates:{ ff:5, csp:1, ccr:1, amex:1 },
-    notes:['Freedom Flex Q3 2026 bonus — expires Sep 30, 2026.','Ticket purchases for events, zoos, amusement parks.'] },
+  { key:'gas', label:'Gas', sub:'Gas & EV charging', icon:'pump', rotating:true,
+    rates:{ ff:1, csp:1, ccr:1, amex:3 },
+    notes:['Amex earns 3% at U.S. gas stations year-round.'] },
+  { key:'transit', label:'Public transit', sub:'Trains, buses, parking, tolls', icon:'bus', rotating:true,
+    rates:{ ff:1, csp:2, ccr:1, amex:1 },
+    notes:['Sapphire codes transit as 2x travel year-round.'] },
+  { key:'entertainment', label:'Live entertainment', sub:'Concerts, sports, parks', icon:'ticket', rotating:true,
+    rates:{ ff:1, csp:1, ccr:1, amex:1 },
+    notes:['Ticket purchases for events, zoos, amusement parks.'] },
   { key:'dining', label:'Dining', sub:'Restaurants, takeout, delivery', icon:'fork',
     rates:{ ff:3, csp:3, ccr:1, amex:1 },
-    notes:['Freedom Flex and Sapphire both earn 3x here.','Points pool to Sapphire for transfers.'] },
+    notes:['Sapphire earns 3x on dining; Freedom Flex earns 3x outside bonus quarters.','Points pool to Sapphire for transfers.'] },
   { key:'travelportal', label:'Travel — Chase portal', sub:'Booked via Chase Travel', icon:'plane', travel:true,
     rates:{ ff:5, csp:5, ccr:1, amex:1 },
     notes:['Freedom Flex earns the same 5x, but Sapphire takes the tie for its trip protections.','Book on Sapphire for better redemption + transfer partners.'] },
@@ -143,6 +150,37 @@ const CATS = [
     notes:['UCR is your flat-rate catch-all.'] },
 ];
 
+// ---- Freedom Flex rotating 5% categories, by quarter ------------------------
+// To add a quarter: copy a block, set the dates, and map each 5% category to
+// one of the CATS keys (gas / transit / entertainment / groceries / dining /
+// online / general, etc.). Chase usually announces ~2-3 weeks before quarter
+// start. Verify at chase.com/freedomflex before publishing.
+const QUARTERS = [
+  { id:'2026Q3', label:'3rd Quarter 2026', start:'2026-07-01', end:'2026-09-30',
+    ffBonus:{ gas:5, transit:5, entertainment:5 },
+    blurb:'5% on gas &amp; EV charging, transit, live entertainment' },
+  // Q4 2026: grocery stores 5%; dining elevated to 7% for Freedom Flex.
+  { id:'2026Q4', label:'4th Quarter 2026', start:'2026-10-01', end:'2026-12-31',
+    ffBonus:{ groceries:5, dining:7 },
+    blurb:'5% at grocery stores, 7% on dining' },
+];
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function currentQuarter(){
+  const t = todayStr();
+  return QUARTERS.find(q => t >= q.start && t <= q.end) || null;
+}
+// Overlay the active quarter's 5% onto a category's Freedom Flex rate.
+function withQuarter(cat){
+  const q = currentQuarter();
+  const bonus = q ? (q.ffBonus[cat.key] || 0) : 0;
+  if(!bonus) return cat;
+  return Object.assign({}, cat, { rates: Object.assign({}, cat.rates, { ff: Math.max(cat.rates.ff||1, bonus) }) });
+}
+
 const DEFAULTS = { bofaBoost:0.75, ucrIntroActive:false, ucrIntroRate:2.625, chaseCpp:1.0 };
 let S = Object.assign({}, DEFAULTS);
 let sel = null, showSettings = false;
@@ -158,12 +196,15 @@ function effective(k, cat){
   if(c.type==='ccr')    return (cat.rates.ccr||1) * (1 + S.bofaBoost);
   if(c.type==='ucr')    return S.ucrIntroActive ? S.ucrIntroRate : 1.5 * (1 + S.bofaBoost);
   if(c.type==='target') return cat.rates.target;
+  if(c.type==='paypal') return cat.rates.paypal || 0;
   return cat.rates.amex || 1;
 }
 function ranking(cat){
-  const keys = Object.keys(CARDS).filter(k => CARDS[k].type==='target' ? cat.rates.target!==undefined : true);
+  const keys = Object.keys(CARDS)
+    .filter(k => LISTED_ONLY.includes(k) ? cat.rates[k]!==undefined : true)
+    .filter(k => cat.accepts ? cat.accepts.includes(k) : true);
   const rows = keys.map(k => ({ key:k, rate: effective(k, cat) }));
-  const pr = cat.travel ? { csp:2, ff:1 } : {};
+  const pr = cat.travel ? { csp:2, ff:1 } : (cat.prefer || {});
   rows.sort((a,b)=> (b.rate - a.rate) || ((pr[b.key]||0) - (pr[a.key]||0)));
   const top = rows[0].rate;
   rows.forEach(r => r.tie = (top - r.rate) < 0.05);
@@ -185,6 +226,7 @@ const ICONS = {
   basket:'<path d="M4 9h16l-1.5 10.5H5.5L4 9Z"/><path d="M8 9l2-5M16 9l-2-5"/>',
   plus:'<circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/>',
   target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/>',
+  warehouse:'<path d="M3 20V9l9-5 9 5v11"/><path d="M7 20v-7h10v7M7 16h10"/>',
   star:'<path d="M12 3v18M3 12h18M6 6l12 12M18 6 6 18"/>',
 };
 const icon = k => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+ICONS[k]+'</svg>';
@@ -239,10 +281,23 @@ function renderChips(){
   el.querySelectorAll('.cat').forEach(b=>b.onclick=()=>{ sel=b.dataset.k; renderChips(); renderResult(); scrollToResult(); });
 }
 
+function fmtDate(s){
+  const [y,m,d] = s.split('-').map(Number);
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1];
+  return mo+' '+d+', '+y;
+}
 function renderResult(){
   const el = document.getElementById('result');
-  const cat = CATS.find(c=>c.key===sel);
-  if(!cat){ el.innerHTML='<div class="empty">Tap a category to see your best card.</div>'; return; }
+  const rawCat = CATS.find(c=>c.key===sel);
+  if(!rawCat){ el.innerHTML='<div class="empty">Tap a category to see your best card.</div>'; return; }
+  const cat = withQuarter(rawCat);
+  const q = currentQuarter();
+  let notes = cat.notes.slice();
+  if(q && q.ffBonus[cat.key]){
+    notes = ['Freedom Flex '+fmt(q.ffBonus[cat.key])+'% bonus this quarter — activate it. Capped at $1,500 combined/qtr; expires '+fmtDate(q.end)+'.'].concat(notes);
+  } else if(rawCat.rotating){
+    notes = ['Not a Freedom Flex bonus this quarter — shown at its non-bonus rate. Re-check chase.com/freedomflex.'].concat(notes);
+  }
   const rows = ranking(cat), w = rows[0], ties = rows.filter(r=>r.tie);
   const runners = rows.slice(1).filter(r=>!r.tie).map(r=>`
     <div class="runner">
@@ -258,7 +313,7 @@ function renderResult(){
         <div style="position:relative;display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-              ${ICON_IMG[w.key] ? `<img class="cimg" src="${ICON_IMG[w.key]}" alt="${CARDS[w.key].short}">` : `<div class="cfallback">${icon('target')}</div>`}
+              ${ICON_IMG[w.key] ? `<img class="cimg" src="${ICON_IMG[w.key]}" alt="${CARDS[w.key].short}">` : `<div class="cfallback" style="background:${CARDS[w.key].band}">${CARDS[w.key].mark ? `<span style="font-weight:700;font-size:15px;letter-spacing:.5px">${CARDS[w.key].mark}</span>` : icon('target')}</div>`}
               <span class="mono" style="font-size:11px;letter-spacing:2px;color:#9c9ab0">${CARDS[w.key].issuer}</span>
               ${ties.length>1?'<span style="font-size:11px;color:#E8B04B;font-weight:600">· TIE</span>':''}
             </div>
@@ -272,7 +327,7 @@ function renderResult(){
         ${ties.length>1?`<div class="note" style="position:relative;margin-top:12px;color:#c9b892">Also ties: ${ties.slice(1).map(t=>CARDS[t.key].short).join(', ')} — pick by protections/points.</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:7px">${runners}</div>
-      <div class="notebox">${cat.notes.map(n=>`<div class="note" style="display:flex;gap:8px"><span style="color:#E8B04B">›</span><span>${n}</span></div>`).join('')}</div>
+      <div class="notebox">${notes.map(n=>`<div class="note" style="display:flex;gap:8px"><span style="color:#E8B04B">›</span><span>${n}</span></div>`).join('')}</div>
     </div>`;
 }
 
@@ -282,7 +337,22 @@ function scrollToResult(){
   const smooth = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   requestAnimationFrame(()=>{ el.scrollIntoView({ behavior: smooth?'smooth':'auto', block:'nearest' }); });
 }
-function renderAll(){ renderSettings(); renderChips(); renderResult(); }
+function renderChrome(){
+  const q = currentQuarter();
+  const eb = document.getElementById('eyebrow');
+  const warn = document.getElementById('warn');
+  const foot = document.getElementById('foot');
+  if(q){
+    eb.textContent = q.label.toUpperCase();
+    warn.innerHTML = '';
+    foot.innerHTML = 'Freedom Flex '+q.label+' bonus: '+q.blurb+' — through '+fmtDate(q.end)+'. Re-check the quarterly categories before relying on them next quarter.<br>On mobile: Share → Add to Home Screen to keep this one tap away.';
+  } else {
+    eb.textContent = 'CATEGORIES NEED UPDATE';
+    warn.innerHTML = '<div class="warn"><span style="font-weight:700;color:#E8B04B">!</span><span><b>Freedom Flex categories aren’t set for today ('+fmtDate(todayStr())+').</b> The rotating 5% bonuses are hidden and shown at their base rate until this quarter is added. Verify at chase.com/freedomflex and update the QUARTERS list in the code.</span></div>';
+    foot.innerHTML = 'On mobile: Share → Add to Home Screen to keep this one tap away.';
+  }
+}
+function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 renderAll();
 
