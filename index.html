@@ -128,7 +128,7 @@ const CATS = [
     notes:['Costco warehouses take Visa credit and debit cards only — Freedom Flex, Target (Mastercard credit) and Amex won’t work.','Chase and Amex grocery bonuses exclude wholesale clubs anyway.','PayPal Debit 5% counts Costco as groceries; $1,000/mo cap, shared with other grocery spend.','Over the PayPal cap, CCR’s 2% wholesale-club rate is next best, but it eats into the $2,500/qtr cap you save for online shopping.'] },
   { key:'online', label:'Online shopping', sub:'General online retail', icon:'monitor',
     rates:{ ff:1, csp:1, ccr:3, amex:3 },
-    notes:['This is your CCR 3% choice category.','CCR 3%+2% combined cap is $2,500/qtr.'] },
+    notes:['This is your CCR 3% choice category.'] },
   { key:'gas', label:'Gas', sub:'Gas & EV charging', icon:'pump', rotating:true,
     rates:{ ff:1, csp:1, ccr:1, amex:3 },
     notes:['Amex earns 3% at U.S. gas stations year-round.'] },
@@ -214,12 +214,27 @@ function ffSpent(q, who){ return +ffRec(q)[who] || 0; }
 function ffLeft(q, who){ return Math.max(0, ffCap(q) - ffSpent(q, who)); }
 function ffCapHit(q){ return q ? FF_CARDS.every(c => ffLeft(q, c.id) <= 0) : false; }   // true only when BOTH cards are capped
 function ffSet(qid, who, v){ SPEND[qid] = Object.assign({ justin:0, corinne:0 }, SPEND[qid] || {}); SPEND[qid][who] = Math.round(v*100)/100; }
+// ---- BofA Customized Cash online-shopping tracker -----------------------------
+// The 3% choice category (online shopping) and the 2% grocery / wholesale-club
+// category share one cap: $2,500 of spend per CALENDAR quarter. Past that the
+// card earns the 1% base. The total counts both. Stored alongside the Freedom totals as
+// SPEND[quarter].ccr and fed by the same ff-spend.json ("ccr": 123.45).
+const CCR_CAP = 2500;
+let ccrEditing = false;
+function calQuarter(){
+  const d = new Date(), y = d.getFullYear(), qn = Math.floor(d.getMonth() / 3) + 1;
+  const endM = qn * 3, endD = new Date(y, endM, 0).getDate();
+  return { id: y + 'Q' + qn, end: y + '-' + String(endM).padStart(2,'0') + '-' + String(endD).padStart(2,'0') };
+}
+function ccrSpent(){ return +((SPEND[calQuarter().id] || {}).ccr) || 0; }
+function ccrLeft(){ return Math.max(0, CCR_CAP - ccrSpent()); }
+function ccrCapHit(){ return ccrSpent() >= CCR_CAP; }
 function importFromUrl(){
   let u; try { u = new URL(window.location.href); } catch(e){ return; }
   const qid = u.searchParams.get('ffq');
   if(!qid) return;
   let n = 0;
-  FF_CARDS.forEach(c => { const v = parseFloat(u.searchParams.get(c.id)); if(!isNaN(v) && v >= 0){ ffSet(qid, c.id, v); n++; } });
+  FF_CARDS.concat([{ id:'ccr' }]).forEach(c => { const v = parseFloat(u.searchParams.get(c.id)); if(!isNaN(v) && v >= 0){ ffSet(qid, c.id, v); n++; } });
   const asof = u.searchParams.get('asof');
   if(n){ SPEND[qid].asof = asof || null; saveSpend(); importMsg = 'Updated from transaction export'+(asof ? ' (through '+fmtDate(asof)+')' : '')+'.'; }
   try { history.replaceState(null, '', u.pathname); } catch(e){}
@@ -227,10 +242,11 @@ function importFromUrl(){
 function loadSpendFile(){
   fetch('ff-spend.json', { cache:'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
     if(!j || !j.quarter) return;
-    const stamp = [j.quarter, j.asof, j.justin, j.corinne].join('|');
+    const stamp = [j.quarter, j.asof, j.justin, j.corinne, j.ccr].join('|');
     let last = null; try { last = localStorage.getItem('bestcard:ffApplied'); } catch(e){}
     if(stamp === last) return;               // this export was already applied
-    FF_CARDS.forEach(c => { const v = parseFloat(j[c.id]); if(!isNaN(v) && v >= 0) ffSet(j.quarter, c.id, v); });
+    FF_CARDS.concat([{ id:'ccr' }]).forEach(c => { const v = parseFloat(j[c.id]); if(!isNaN(v) && v >= 0) ffSet(j.quarter, c.id, v); });
+    if(!SPEND[j.quarter]) return;
     SPEND[j.quarter].asof = j.asof || null; saveSpend();
     try { localStorage.setItem('bestcard:ffApplied', stamp); } catch(e){}
     importMsg = 'Updated from transaction export'+(j.asof ? ' (through '+fmtDate(j.asof)+')' : '')+'.';
@@ -258,7 +274,7 @@ const fmt = n => n.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
 function effective(k, cat){
   const c = CARDS[k];
   if(c.type==='chase')  return (cat.rates[k]||1) * S.chaseCpp;
-  if(c.type==='ccr')    return (cat.rates.ccr||1) * (1 + S.bofaBoost);
+  if(c.type==='ccr')    return (ccrCapHit() ? 1 : (cat.rates.ccr||1)) * (1 + S.bofaBoost);
   if(c.type==='ucr')    return S.ucrIntroActive ? S.ucrIntroRate : 1.5 * (1 + S.bofaBoost);
   if(c.type==='target') return cat.rates.target;
   if(c.type==='paypal') return cat.rates.paypal || 0;
@@ -374,6 +390,18 @@ function renderResult(){
   const isBonusCat = !!(q && q.ffBonus[rawCat.key]);
   const trkIn = isBonusCat && w.key==='ff';
   const trkBelow = isBonusCat && !trkIn && ffCapHit(q);
+  // Customized Cash tracker: inside the card when CCR wins on its bonus rate;
+  // below the winner once the cap is hit (so the total can still be corrected).
+  const isCcrCat = (rawCat.rates.ccr || 1) >= 2;
+  const ccrIn = isCcrCat && w.key==='ccr';
+  const ccrBelow = isCcrCat && !ccrIn && ccrCapHit();
+  if(isCcrCat){
+    const cq = calQuarter(), eff = fmt(rawCat.rates.ccr * (1 + S.bofaBoost));
+    notes = [ ccrCapHit()
+      ? 'Customized Cash has hit its '+money(CCR_CAP)+' quarterly cap — shown at its base rate until '+fmtDate(cq.end)+'.'
+      : 'Customized Cash '+eff+'% applies to the first '+money(CCR_CAP)+' per quarter (online + grocery/wholesale combined) — '+money(ccrLeft())+' left through '+fmtDate(cq.end)+'.'
+    ].concat(notes);
+  }
   const runners = rows.slice(1).filter(r=>!r.tie).map(r=>`
     <div class="runner">
       <div class="stripe" style="background:${CARDS[r.key].band}"></div>
@@ -401,12 +429,15 @@ function renderResult(){
         </div>
         ${ties.length>1?`<div class="note" style="position:relative;margin-top:12px;color:#c9b892">Also ties: ${ties.slice(1).map(t=>CARDS[t.key].short).join(', ')} — pick by protections/points.</div>`:''}
         ${trkIn?'<div id="tracker" data-in="1"></div>':''}
+        ${ccrIn?'<div id="ccrTracker" data-in="1"></div>':''}
       </div>
       ${trkBelow?'<div id="tracker"></div>':''}
+      ${ccrBelow?'<div id="ccrTracker"></div>':''}
       <div style="display:flex;flex-direction:column;gap:7px">${runners}</div>
       <div class="notebox">${notes.map(n=>`<div class="note" style="display:flex;gap:8px"><span style="color:#E8B04B">›</span><span>${n}</span></div>`).join('')}</div>
     </div>`;
   renderTracker();
+  renderCcrTracker();
 }
 
 function scrollToResult(){
@@ -476,6 +507,39 @@ function renderTracker(){
   inp.onkeydown = e => { if(e.key==='Enter') go(); };
   document.getElementById('trkMode').onclick = () => { trkEditing = !trkEditing; renderTracker(); };
   el.querySelectorAll('#trkWho button').forEach(b => b.onclick = () => { trkWho = b.dataset.v; renderTracker(); });
+}
+function renderCcrTracker(){
+  const el = document.getElementById('ccrTracker');
+  if(!el) return;
+  const cq = calQuarter(), spent = ccrSpent(), pct = Math.min(100, spent / CCR_CAP * 100), hit = spent >= CCR_CAP;
+  const color = hit ? '#6f6d82' : pct >= 85 ? '#E8883B' : '#E8B04B';
+  const rec = SPEND[cq.id] || {};
+  el.innerHTML = `
+    <div class="trk${el.dataset.in?' in-card':''}">
+      <div class="trk-top">
+        <span class="trk-lab">${el.dataset.in?'BONUS CAP':'CUSTOMIZED CASH BONUS CAP'} · ${cq.id.slice(4)} ${cq.id.slice(0,4)}</span>
+        <span class="mono trk-amt">${money(spent)} <span style="color:#6f6d82;font-weight:400">/ ${money(CCR_CAP)}</span></span>
+      </div>
+      <div class="trk-bar" role="progressbar" aria-label="Customized Cash bonus-category spend" aria-valuemin="0" aria-valuemax="${CCR_CAP}" aria-valuenow="${Math.round(spent)}">
+        <div class="trk-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div class="note">${hit ? 'Cap reached — now earning the base rate.' : money(CCR_CAP - spent)+' left at the bonus rate · ends '+fmtDate(cq.end)}${rec.asof ? ' · export through '+fmtDate(rec.asof) : ''}</div>
+      <div class="trk-row">
+        <input class="in" id="ccrAmt" type="number" inputmode="decimal" step="0.01" min="0" placeholder="${ccrEditing?'New total':'Amount'}">
+        <button class="set" id="ccrGo">${ccrEditing?'Set total':'Add'}</button>
+        <button class="trk-link" id="ccrMode">${ccrEditing?'Cancel':'Edit total'}</button>
+      </div>
+    </div>`;
+  const inp = document.getElementById('ccrAmt');
+  const go = () => {
+    const v = parseFloat(inp.value);
+    if(isNaN(v) || v < 0) return;
+    ffSet(cq.id, 'ccr', ccrEditing ? v : spent + v);
+    ccrEditing = false; saveSpend(); renderResult();
+  };
+  document.getElementById('ccrGo').onclick = go;
+  inp.onkeydown = e => { if(e.key==='Enter') go(); };
+  document.getElementById('ccrMode').onclick = () => { ccrEditing = !ccrEditing; renderCcrTracker(); };
 }
 function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
