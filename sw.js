@@ -1,6 +1,6 @@
 // Best Card service worker
 // Bump VERSION on every publish to force the home-screen shortcut to update.
-const VERSION = '2026-10-04b';
+const VERSION = '2026-11-07a';
 const CACHE = 'bestcard-' + VERSION;
 
 // Files safe to pre-cache for offline use.

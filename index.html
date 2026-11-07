@@ -80,6 +80,61 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
 @media (prefers-reduced-motion:reduce){ .trk-fill{ transition:none; } }
 @media (max-width:520px){ .wrap{ padding:16px 14px 30px; } .chip{ grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); } }
 @media (prefers-reduced-motion:reduce){ .cat{ transition:none; } }
+
+[hidden]{ display:none !important; }
+.tabs { display:flex; width:100%; margin:16px 0 4px; }
+.tabs button { flex:1 1 0; min-height:44px; }
+.ov { display:flex; flex-direction:column; gap:14px; margin-top:14px; }
+.ov-h { font-size:14px; font-weight:600; letter-spacing:.2px; }
+.ov-sub { font-size:13px; color:#9a98ae; line-height:1.5; }
+.ov-sec { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:6px; }
+.ov-key { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#9a98ae; }
+.ov-key i { width:2px; height:12px; background:#EDEBE4; display:inline-block; }
+.ov-switch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; background:#14141f; border:1px solid #26263a; border-radius:12px; padding:8px 14px; min-height:52px; }
+.ov-sw { position:relative; width:52px; height:44px; flex-shrink:0; padding:0; border:none; background:transparent; cursor:pointer; }
+.ov-sw .tr { position:absolute; left:0; top:8px; width:52px; height:28px; border-radius:14px; background:#232334; border:1px solid #3a3a52; box-sizing:border-box; transition:background .15s; }
+.ov-sw .kn { position:absolute; top:12px; left:4px; width:20px; height:20px; border-radius:50%; background:#B7B5C4; transition:left .15s, background .15s; }
+.ov-sw[aria-checked="true"] .tr { background:#E8B04B; border-color:#E8B04B; }
+.ov-sw[aria-checked="true"] .kn { left:28px; background:#1a1408; }
+.ov-sw:focus-visible { outline:2px solid #E8B04B; outline-offset:2px; border-radius:14px; }
+.ov-alert { display:flex; gap:12px; align-items:flex-start; background:#1f1712; border:1px solid #5a3a22; border-radius:12px; padding:13px 14px; font-size:13.5px; line-height:1.45; }
+.ov-alert i { width:22px; height:22px; border-radius:50%; background:#F08A5B; color:#1a0e08; font-style:normal; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.ov-alert span { color:#C9B4A6; }
+.ov-card { background:#14141f; border:1px solid #26263a; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:14px; }
+.ov-card.flat { padding:14px 16px; gap:12px; }
+.ov-top { display:flex; align-items:center; gap:12px; }
+.ov-id { flex:1 1 0; min-width:0; }
+.ov-img { height:44px; width:auto; border-radius:6px; box-shadow:0 2px 9px rgba(0,0,0,.45); display:block; }
+.ov-img.sm { height:38px; border-radius:5px; }
+.ov-fb { height:44px; width:70px; border-radius:6px; color:#fff; font-weight:700; font-size:16px; letter-spacing:.5px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 9px rgba(0,0,0,.45); flex-shrink:0; }
+.ov-fb.sm { height:38px; width:60px; font-size:14px; }
+.ov-fb svg { width:22px; height:22px; }
+.ov-name { font-size:16px; font-weight:700; letter-spacing:-.2px; line-height:1.2; }
+.ov-card.flat .ov-name { font-size:15px; }
+.ov-meta { font-size:12px; color:#9a98ae; margin-top:2px; }
+.ov-meta em { font-style:normal; letter-spacing:1.5px; }
+.ov-left { text-align:right; }
+.ov-left b { display:block; font-size:20px; font-weight:700; line-height:1.1; }
+.ov-left span { display:block; font-size:11.5px; color:#9a98ae; margin-top:2px; }
+.ov-bar { position:relative; height:12px; border-radius:6px; background:#232334; margin-bottom:7px; }
+.ov-fill { position:absolute; left:0; top:0; bottom:0; border-radius:6px; }
+.ov-tick { position:absolute; top:-3px; bottom:-3px; width:2px; background:#EDEBE4; border-radius:1px; }
+.ov-line { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; }
+.ov-line .st { font-size:12.5px; font-weight:600; }
+.ov-pace { font-size:12.5px; color:#9a98ae; line-height:1.4; margin-top:7px; }
+.ov-tl-h { font-size:11px; letter-spacing:2px; color:#9a98ae; font-weight:600; margin-bottom:8px; }
+.ov-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.ov-tile { background:#1b1b2a; border:1px solid #2c2c40; border-radius:10px; padding:11px 12px; display:flex; flex-direction:column; gap:3px; }
+.ov-tile.bonus { background:rgba(232,176,75,.10); border-color:#E8B04B; }
+.ov-rate { font-size:21px; font-weight:700; line-height:1.1; }
+.ov-tile.bonus .ov-rate { color:#E8B04B; }
+.ov-tn { font-size:13px; font-weight:600; line-height:1.25; }
+.ov-ts { font-size:11.5px; color:#9a98ae; line-height:1.3; }
+.ov-foot { font-size:12px; color:#9a98ae; line-height:1.45; margin-top:8px; }
+.ov-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.ov-chip { display:inline-flex; align-items:baseline; gap:7px; background:#1b1b2a; border:1px solid #2c2c40; border-radius:8px; padding:6px 10px; font-size:12.5px; font-weight:500; }
+.ov-chip b { font-size:13px; color:#E8B04B; }
+@media (prefers-reduced-motion:reduce){ .ov-sw .tr, .ov-sw .kn { transition:none; } }
 </style>
 </head>
 <body>
@@ -93,8 +148,15 @@ input[type=range] { width:100%; accent-color:#E8B04B; }
   </div>
   <div id="settings"></div>
   <div id="warn"></div>
-  <div class="chip" id="chips"></div>
-  <div id="result"><div class="empty">Tap a category to see your best card.</div></div>
+  <div class="tabs seg" id="tabs" role="tablist" aria-label="View">
+    <button role="tab" id="tabBest" data-v="best" data-on="1" aria-selected="true" aria-controls="viewBest">Best card</button>
+    <button role="tab" id="tabOverview" data-v="overview" data-on="0" aria-selected="false" aria-controls="viewOverview">Overview</button>
+  </div>
+  <div id="viewBest" role="tabpanel" aria-labelledby="tabBest">
+    <div class="chip" id="chips"></div>
+    <div id="result"><div class="empty">Tap a category to see your best card.</div></div>
+  </div>
+  <div id="viewOverview" role="tabpanel" aria-labelledby="tabOverview" hidden></div>
   <div class="foot" id="foot"></div>
 </div>
 
@@ -541,6 +603,170 @@ function renderCcrTracker(){
   inp.onkeydown = e => { if(e.key==='Enter') go(); };
   document.getElementById('ccrMode').onclick = () => { ccrEditing = !ccrEditing; renderCcrTracker(); };
 }
+// ---- Overview tab: every card at a glance --------------------------------------
+// The app always opens on "Best card". Only the Bonus-rates switch is remembered.
+let ovView = 'best', ovShowRates = false, ovFocus = false;
+try { ovShowRates = localStorage.getItem('bestcard:showRates') === '1'; } catch(e){}
+const ovPad = n => String(n).padStart(2, '0');
+function qBounds(id){
+  const y = +id.slice(0,4), n = +id.slice(5), em = n * 3, ed = new Date(y, em, 0).getDate();
+  return { start: y+'-'+ovPad(em-2)+'-01', end: y+'-'+ovPad(em)+'-'+ovPad(ed) };
+}
+function dayNum(s){ const [y,m,d] = s.split('-').map(Number); return Math.round(Date.UTC(y, m-1, d) / 86400000); }
+function addDays(s, n){ const t = new Date((dayNum(s) + n) * 86400000); return t.getUTCFullYear()+'-'+ovPad(t.getUTCMonth()+1)+'-'+ovPad(t.getUTCDate()); }
+function shortDate(s){ return fmtDate(s).replace(/, \d{4}$/, ''); }
+const money2 = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const ovRate = n => (+n.toFixed(2)) + '%';
+function paceInfo(spent, cap, start, end, asof){
+  const total = dayNum(end) - dayNum(start) + 1;
+  const el = Math.max(1, Math.min(total, dayNum(asof) - dayNum(start) + 1));
+  const frac = el / total;
+  if(spent >= cap) return { frac, text:'Cap reached — now earning the base rate.' };
+  if(spent <= 0)   return { frac, text:'No qualifying spend yet.' };
+  const rate = spent / el, proj = rate * total;
+  if(proj >= cap){
+    const when = addDays(asof, Math.ceil((cap - spent) / rate));
+    return { frac, runOut: when, text:'Estimate: about '+money(rate)+' a day, so the cap runs out around '+shortDate(when)+'.' };
+  }
+  return { frac, text:'Estimate: on pace for about '+money(proj)+' this quarter, under the cap.' };
+}
+function ovBuild(){
+  const q = currentQuarter(), cq = calQuarter();
+  const fid = q ? q.id : cq.id, fb = qBounds(fid), fAsof = (SPEND[fid] || {}).asof || todayStr();
+  const cb = qBounds(cq.id), cAsof = (SPEND[cq.id] || {}).asof || todayStr();
+  const boost = 1 + S.bofaBoost, boostPct = Math.round(S.bofaBoost * 100);
+  const ffTiles = [];
+  if(q) Object.keys(q.ffBonus).forEach(k => {
+    const c = CATS.find(x => x.key === k);
+    if(c) ffTiles.push({ bonus:true, rate:ovRate(q.ffBonus[k] * S.chaseCpp), label:c.label, sub:q.id.slice(4)+' bonus · counts toward cap' });
+  });
+  CATS.forEach(c => {
+    if((c.rates.ff || 1) > 1 && !(q && q.ffBonus[c.key])) ffTiles.push({ rate:ovRate(c.rates.ff * S.chaseCpp), label:c.label, sub:'Year-round' });
+  });
+  const capped = [];
+  FF_CARDS.slice().reverse().forEach(c => {
+    const spent = ffSpent(q, c.id), cap = ffCap(q), pi = paceInfo(spent, cap, fb.start, fb.end, fAsof);
+    capped.push({ key:'ff', title:'Freedom Flex', meta:'<em>CHASE</em> · '+c.label, period:fid.slice(4), spent, cap, pi,
+      tilesTitle:'BONUS RATES', tiles:ffTiles, foot:'1% on everything else, and 1% on bonus categories once the cap is reached.' });
+  });
+  const cs = ccrSpent();
+  capped.push({ key:'ccr', title:'Customized Cash', meta:'<em>BofA</em> · Quarterly cap', period:cq.id.slice(4), spent:cs, cap:CCR_CAP,
+    pi:paceInfo(cs, CCR_CAP, cb.start, cb.end, cAsof), tilesTitle:'BONUS RATES · SHARE ONE CAP',
+    tiles:[
+      { bonus:true, rate:ovRate(3 * boost), label:'Online shopping', sub:'3% choice category + '+boostPct+'% boost' },
+      { bonus:true, rate:ovRate(2 * boost), label:'Groceries & wholesale clubs', sub:'2% + '+boostPct+'% boost' },
+      { rate:ovRate(boost), label:'Everything else', sub:'1% + '+boostPct+'% boost' },
+      { rate:ovRate(boost), label:'After the cap', sub:'Both bonuses drop to base' } ],
+    foot:'The '+money(CCR_CAP)+' quarterly cap counts online shopping and grocery / wholesale-club spend together.' });
+  const now = new Date(), dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const grocery = CATS.find(c => c.key === 'groceries');
+  capped.push({ key:'paypal', title:'PayPal Debit', meta:'<em>PAYPAL</em> · Monthly cap', period:'month', spent:0, cap:1000, untracked:true,
+    pi:{ frac:now.getDate() / dim, text:'Resets on the 1st of each month. Spend is not tracked in the app yet.' },
+    tilesTitle:'BONUS RATE',
+    tiles:[ { bonus:true, rate:ovRate(grocery.rates.paypal), label:'Groceries & Costco', sub:'Your selected category this month' } ],
+    foot:'The '+ovRate(grocery.rates.paypal)+' applies only to the category selected in PayPal, up to $1,000 of spend per month, shared across groceries and Costco.' });
+
+  const byRate = (key, test) => CATS.filter(c => test(c)).map(c => ({ rate:effective(key, c), label:c.label }))
+    .sort((a, b) => b.rate - a.rate).map(x => ({ rate:ovRate(x.rate), label:x.label }));
+  const general = CATS.find(c => c.key === 'general');
+  const flat = [
+    { key:'csp',   title:'Sapphire Preferred',  meta:'<em>CHASE</em> · Points at '+fmt(S.chaseCpp)+'¢ each', chips:byRate('csp', c => (c.rates.csp || 1) > 1) },
+    { key:'ucr',   title:'Unlimited Cash',      meta:'<em>BofA</em> · Flat rate with '+boostPct+'% boost', chips:[ { rate:ovRate(effective('ucr', general)), label:'Everything' } ] },
+    { key:'amex',  title:'Blue Cash Everyday',  meta:'<em>AMEX</em> · Cash back', chips:byRate('amex', c => (c.rates.amex || 1) > 1 && c.key.indexOf('target') !== 0) },
+    { key:'target',title:'Target Circle Card',  meta:'<em>TARGET</em> · Instant discount at checkout', chips:byRate('target', c => c.rates.target) }
+  ];
+  return { capped, flat, asof:fAsof, qLabel:q ? q.label : cq.id };
+}
+function ovImg(key, sm){
+  if(ICON_IMG[key]) return '<img class="ov-img'+(sm?' sm':'')+'" src="'+ICON_IMG[key]+'" alt="'+CARDS[key].short+' card">';
+  const c = CARDS[key];
+  return '<div class="ov-fb'+(sm?' sm':'')+'" style="background:'+c.band+'">'+(c.mark ? c.mark : icon('target'))+'</div>';
+}
+function ovCapped(t){
+  const frac = Math.min(1, t.spent / t.cap), pct = Math.round(frac * 100);
+  const hit = !t.untracked && t.spent >= t.cap, hot = !t.untracked && !hit && frac >= 0.8;
+  const fill = hit ? '#6f6d82' : hot ? '#F08A5B' : '#E8B04B';
+  const left = Math.max(0, t.cap - t.spent);
+  const leftHtml = t.untracked
+    ? '<b class="mono">'+money(t.cap)+'</b><span>monthly cap</span>'
+    : '<b class="mono" style="color:'+(hot ? '#F08A5B' : '#EDEBE4')+'">'+money(left)+'</b><span>left in '+t.period+'</span>';
+  const status = t.untracked ? 'Not tracked yet' : hit ? 'Capped' : hot ? 'Near cap · '+pct+'% used' : pct+'% used';
+  const spentHtml = t.untracked ? '<span style="color:#9a98ae">Spend vs. cap not available</span>'
+    : '<b>'+money2(t.spent)+'</b> <span style="color:#9a98ae">of '+money(t.cap)+'</span>';
+  const tiles = ovShowRates ? `
+      <div>
+        <div class="ov-tl-h">${t.tilesTitle}</div>
+        <div class="ov-grid">${t.tiles.map(x => `<div class="ov-tile${x.bonus ? ' bonus' : ''}"><div class="ov-rate mono">${x.rate}</div><div class="ov-tn">${x.label}</div><div class="ov-ts">${x.sub}</div></div>`).join('')}</div>
+        <div class="ov-foot">${t.foot}</div>
+      </div>` : '';
+  return `
+    <div class="ov-card">
+      <div class="ov-top">
+        ${ovImg(t.key)}
+        <div class="ov-id"><div class="ov-name">${t.title}</div><div class="ov-meta">${t.meta}</div></div>
+        <div class="ov-left">${leftHtml}</div>
+      </div>
+      <div>
+        <div class="ov-bar" role="progressbar" aria-label="${t.title} bonus cap used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+          <div class="ov-fill" style="width:${(frac * 100).toFixed(1)}%;background:${fill}"></div>
+          <div class="ov-tick" style="left:${(t.pi.frac * 100).toFixed(1)}%"></div>
+        </div>
+        <div class="ov-line"><span class="mono">${spentHtml}</span><span class="st" style="color:${hot ? '#F08A5B' : '#EDEBE4'}">${status}</span></div>
+        <div class="ov-pace">${t.pi.text}</div>
+      </div>${tiles}
+    </div>`;
+}
+function ovFlat(f){
+  const chips = ovShowRates ? `<div class="ov-chips">${f.chips.map(x => `<div class="ov-chip"><b class="mono">${x.rate}</b><span>${x.label}</span></div>`).join('')}</div>` : '';
+  return `
+    <div class="ov-card flat">
+      <div class="ov-top">${ovImg(f.key, true)}<div class="ov-id"><div class="ov-name">${f.title}</div><div class="ov-meta">${f.meta}</div></div></div>${chips}
+    </div>`;
+}
+function renderOverview(){
+  const el = document.getElementById('viewOverview');
+  if(!el) return;
+  const d = ovBuild();
+  const hot = d.capped.filter(t => !t.untracked && t.spent < t.cap && t.spent / t.cap >= 0.8);
+  const alerts = hot.map(t => {
+    const name = t.key === 'ff' ? t.meta.split('· ')[1] + '’s Freedom Flex' : t.title;
+    return `<div class="ov-alert"><i aria-hidden="true">!</i><div><b style="font-weight:600">${name} has ${money(t.cap - t.spent)} of bonus room left.</b> <span>${t.pi.runOut ? 'At the current pace it runs out around '+shortDate(t.pi.runOut)+' — use another card for those purchases after that.' : ''}</span></div></div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="ov">
+      <div>
+        <div class="ov-h" style="font-size:18px;font-weight:700;letter-spacing:-.3px">All your cards, at a glance</div>
+        <div class="ov-sub">${d.qLabel}${(SPEND[(currentQuarter() || calQuarter()).id] || {}).asof ? ' · totals through '+shortDate(d.asof) : ''}</div>
+      </div>
+      <div class="ov-switch-row">
+        <div><div style="font-size:14px;font-weight:600">Bonus rates</div><div class="ov-sub" style="font-size:12px;line-height:1.35">Show category rates on each card</div></div>
+        <button type="button" class="ov-sw" id="ovRates" role="switch" aria-checked="${ovShowRates}" aria-label="Show bonus rates on each card"><span class="tr"></span><span class="kn"></span></button>
+      </div>
+      ${alerts}
+      <div class="ov-sec"><div class="ov-h">Cards with a bonus cap</div><div class="ov-key"><i></i>time elapsed</div></div>
+      ${d.capped.map(ovCapped).join('')}
+      <div class="ov-sec" style="margin-top:10px"><div class="ov-h">Cards with no cap to track</div><div class="ov-key">earn rate only</div></div>
+      ${d.flat.map(ovFlat).join('')}
+      <div class="ov-foot" style="margin-top:4px">The white tick on each bar shows how far through the quarter (or month) we are. A fill that sits right of the tick means you are spending ahead of pace. Rates show cash back at your current Settings.</div>
+    </div>`;
+  const sw = document.getElementById('ovRates');
+  sw.onclick = () => {
+    ovShowRates = !ovShowRates; ovFocus = true;
+    try { localStorage.setItem('bestcard:showRates', ovShowRates ? '1' : '0'); } catch(e){}
+    renderOverview();
+  };
+  if(ovFocus){ sw.focus(); ovFocus = false; }
+}
+function setView(v){
+  ovView = v;
+  document.getElementById('viewBest').hidden = v !== 'best';
+  document.getElementById('viewOverview').hidden = v !== 'overview';
+  document.querySelectorAll('#tabs button').forEach(b => { const on = b.dataset.v === v; b.dataset.on = on ? 1 : 0; b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  if(v === 'overview') renderOverview();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setView(b.dataset.v));
+// Keep the Overview in step whenever the Best-card result re-renders (new export, manual edit, settings change).
+{ const baseRenderResult = renderResult; renderResult = function(){ baseRenderResult.apply(this, arguments); renderOverview(); }; }
 function renderAll(){ renderChrome(); renderSettings(); renderChips(); renderResult(); }
 document.getElementById('setBtn').onclick=()=>{ showSettings=!showSettings; renderSettings(); };
 importFromUrl();
